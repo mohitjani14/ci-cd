@@ -9,7 +9,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - cp Index.html /var/www/html/
+      - cp index.html /var/www/html/
   post_build:
     commands:
       - echo Configuring NGINX
