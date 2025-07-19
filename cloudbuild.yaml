@@ -1,0 +1,47 @@
+# cloudbuild.yaml
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA', '.']
+  id: 'Build Docker Image'
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA']
+  id: 'Push to Artifact Registry'
+
+# Example for running tests (assuming pytest for Python)
+- name: 'python:3.9-slim' # Use a Python image for testing
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      pip install -r requirements.txt
+      pytest  # Assuming pytest is in requirements.txt
+  id: 'Run Unit Tests'
+
+# Example for deploying to Cloud Run
+- name: 'gcr.io/google.com/cloudsdk/cloud-sdk'
+  args:
+    - 'gcloud'
+    - 'run'
+    - 'deploy'
+    - 'my-app'
+    - '--image'
+    - 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA'
+    - '--region'
+    - 'us-central1'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated' # For public access
+  id: 'Deploy to Cloud Run'
+
+images:
+- 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA'
+
+options:
+  # You can specify a timeout for the entire build
+  # timeout: '1200s' # 20 minutes
+  machineType: 'N1_HIGHCPU_8' # Use a more powerful machine for faster builds
+
+# Configure substitutions for variables like project ID and commit SHA
+substitutions:
+  _REGION: us-central1
