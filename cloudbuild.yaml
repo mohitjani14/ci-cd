@@ -1,47 +1,50 @@
 # cloudbuild.yaml
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA', '.']
-  id: 'Build Docker Image'
-
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA']
-  id: 'Push to Artifact Registry'
-
-# Example for running tests (assuming pytest for Python)
-- name: 'python:3.9-slim' # Use a Python image for testing
+# Step 1: Run unit tests
+- name: 'python:3.9-slim-buster'
   entrypoint: 'bash'
   args:
     - '-c'
     - |
+      cd app
       pip install -r requirements.txt
-      pytest  # Assuming pytest is in requirements.txt
+      pytest
   id: 'Run Unit Tests'
+  dir: 'app' # Set working directory for this step
 
-# Example for deploying to Cloud Run
+# Step 2: Build the Docker image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA', '.']
+  id: 'Build Docker Image'
+
+# Step 3: Push the Docker image to Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA']
+  id: 'Push to Artifact Registry'
+
+# Step 4: Deploy the image to Cloud Run
 - name: 'gcr.io/google.com/cloudsdk/cloud-sdk'
   args:
     - 'gcloud'
     - 'run'
     - 'deploy'
-    - 'my-app'
+    - 'my-gcp-cicd-app' # Service name
     - '--image'
     - 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA'
     - '--region'
     - 'us-central1'
     - '--platform'
     - 'managed'
-    - '--allow-unauthenticated' # For public access
+    - '--allow-unauthenticated' # Allow public access for this example
   id: 'Deploy to Cloud Run'
 
 images:
 - 'us-central1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$COMMIT_SHA'
 
 options:
-  # You can specify a timeout for the entire build
+  # REQUIRED: Specify how logs should be handled when a service account is used
+  logging: CLOUD_LOGGING_ONLY
+  # Optional: Increase build timeout if your build is complex
   # timeout: '1200s' # 20 minutes
-  machineType: 'N1_HIGHCPU_8' # Use a more powerful machine for faster builds
-
-# Configure substitutions for variables like project ID and commit SHA
-substitutions:
-  _REGION: us-central1
+  # Optional: Use a more powerful machine for faster builds
+  # machineType: 'N1_HIGHCPU_8'
