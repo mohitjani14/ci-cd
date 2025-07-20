@@ -8,16 +8,12 @@ steps:
     - |
       # Install dependencies from the 'app' directory
       pip install -r app/requirements.txt
-      # Add the root directory '/workspace' to PYTHONPATH
-      # This allows 'app' to be imported as a module
+      # Set PYTHONPATH for the current shell session
       export PYTHONPATH=$PYTHONPATH:/workspace
       # Run pytest from the root of the repository, pointing to the tests directory
       pytest app/tests/
   id: 'Run Unit Tests'
-  # Remove 'dir: app' as we are managing paths explicitly
-  # dir: 'app' # NO LONGER NEEDED OR DESIRABLE FOR THIS APPROACH
-
-# ... rest of your cloudbuild.yaml ...
+  # NO 'dir' specified here, as we are running from the root of the workspace
 
 # Step 2: Build the Docker image
 - name: 'gcr.io/cloud-builders/docker'
