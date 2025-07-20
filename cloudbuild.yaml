@@ -6,11 +6,18 @@ steps:
   args:
     - '-c'
     - |
-      cd app
-      pip install -r requirements.txt
-      pytest
+      # Install dependencies from the 'app' directory
+      pip install -r app/requirements.txt
+      # Add the root directory '/workspace' to PYTHONPATH
+      # This allows 'app' to be imported as a module
+      export PYTHONPATH=$PYTHONPATH:/workspace
+      # Run pytest from the root of the repository, pointing to the tests directory
+      pytest app/tests/
   id: 'Run Unit Tests'
-  dir: 'app' # Set working directory for this step
+  # Remove 'dir: app' as we are managing paths explicitly
+  # dir: 'app' # NO LONGER NEEDED OR DESIRABLE FOR THIS APPROACH
+
+# ... rest of your cloudbuild.yaml ...
 
 # Step 2: Build the Docker image
 - name: 'gcr.io/cloud-builders/docker'
